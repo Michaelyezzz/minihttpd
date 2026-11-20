@@ -27,7 +27,6 @@ void file_read_secure(const char *uri, file_content_t *content) {
         return;
     }
 
-    // 2. Resolver ruta de la carpeta base (Posible 500)
     char resolved_base[PATH_MAX];
     if (realpath(BASE_DIR, resolved_base) == NULL) {
         perror("[DEBUG] 500: Fallo realpath en BASE_DIR");
@@ -35,14 +34,14 @@ void file_read_secure(const char *uri, file_content_t *content) {
         return;
     }
 
-    // 3. Prevenir Directory Traversal
-    if (strncmp(resolved_base, resolved_path, strlen(resolved_base)) != 0) {
+    size_t base_len = strlen(resolved_base);
+    if (strncmp(resolved_base, resolved_path, base_len) != 0 ||
+        (resolved_path[base_len] != '/' && resolved_path[base_len] != '\0')) {
         printf("[DEBUG] 403: Intento de evasión hacia %s\n", resolved_path);
         content->status_code = 403;
         return;
     }
 
-    // 4. Abrir archivo
     FILE *f = fopen(resolved_path, "rb");
     if (!f) {
         perror("[DEBUG] 403: Fallo fopen (sin permisos)");
@@ -54,7 +53,6 @@ void file_read_secure(const char *uri, file_content_t *content) {
     long fsize = ftell(f);
     fseek(f, 0, SEEK_SET);
 
-    // 5. Reservar memoria (Posible 500)
     content->data = malloc(fsize + 1);
     if (!content->data) {
         perror("[DEBUG] 500: Fallo malloc (memoria insuficiente)");
@@ -63,7 +61,7 @@ void file_read_secure(const char *uri, file_content_t *content) {
         return;
     }
 
-    // 6. Leer archivo (Posible 500)
+
     size_t bytes_read = fread(content->data, 1, fsize, f);
     if (fsize > 0 && bytes_read != (size_t)fsize) {
         printf("[DEBUG] 500: Fallo fread. Esperaba %ld bytes, leyó %zu\n", fsize, bytes_read);

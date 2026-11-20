@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 typedef struct {
-    int server_fd;
+    int sd;
     int epoll_fd;
     uint16_t port;
 } server_t;
